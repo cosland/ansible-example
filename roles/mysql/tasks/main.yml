@@ -1,0 +1,56 @@
+---
+- name: Install MySQL server and client
+  apt: pkg={{ item }} update_cache=yes
+  sudo: yes
+  with_items:
+    - mysql-common-5.6
+    - mysql-server-5.6
+    - mysql-client-5.6
+    - python-mysqldb
+
+- name: Change root user password on first run or when mysql.current_root_password was overrided with -e option
+  mysql_user:
+    login_user=root
+    login_password={{ mysql.current_root_password }}
+    name=root
+    password={{ mysql.root_password }}
+    priv=*.*:ALL,GRANT
+    host={{ item }}
+  with_items:
+    - "{{ ansible_hostname }}"
+    - 127.0.0.1
+    - ::1
+    - localhost
+
+- name: MySQL Configuration
+  template:
+    src=my.cnf.j2
+    dest=/etc/mysql/my.cnf
+    owner=root
+    group=root
+    mode=0644
+  sudo: yes
+  notify: mysql-restart
+
+- meta: flush_handlers
+
+- name: Create DBs
+  mysql_db:
+    login_user=root
+    login_password={{ mysql.root_password }}
+    name={{ item }}
+    state=present
+  with_items: mysql.databases
+
+- name: Create DB users
+  mysql_user:
+    login_user=root
+    login_password={{ mysql.root_password }}
+    name={{ item.0.name }}
+    password={{ item.0.password }}
+    priv={{ item.0.priv }}
+    state={{ item.0.state | default('present') }}
+    host={{ item.1 }}
+  with_subelements:
+    - mysql.users
+    - hosts

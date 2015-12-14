@@ -1,0 +1,19 @@
+---
+mysql:
+  root_password: ''
+  current_root_password: ''
+  databases:
+    - codeception
+  users:
+    # account for developer admin instead of using root
+    - name: admin
+      password: admin
+      priv: '*.*:ALL,GRANT'
+      hosts:
+        - localhost
+        - '%'
+
+# Adding dynamic values as needed as opposed to all at once
+mysql_bind_address: 0.0.0.0
+mysql_log_queries_not_using_indexes: true
+mysql_long_query_time: 2
